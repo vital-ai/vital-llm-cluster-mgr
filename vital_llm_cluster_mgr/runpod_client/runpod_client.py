@@ -1,4 +1,15 @@
+from enum import Enum
+
 import requests
+
+class PodStatus(Enum):
+    CREATED = "CREATED"
+    RUNNING = "RUNNING"
+    RESTARTING = "RESTARTING"
+    EXITED = "EXITED"
+    PAUSED = "PAUSED"
+    DEAD = "DEAD"
+    TERMINATED = "TERMINATED"
 
 class RunpodClient:
 
@@ -63,6 +74,7 @@ class RunpodClient:
                 pods {
                     id
                     name
+                    desiredStatus
                     runtime {
                         uptimeInSeconds
                         ports {
@@ -94,6 +106,11 @@ class RunpodClient:
         except KeyError:
             raise Exception("Unexpected response format: " + str(data))
 
+    def get_pod_status(self, pod_id: str) -> PodStatus:
+        pod_details = self.get_pod_details(pod_id)
+        pod_status_str = pod_details["desiredStatus"]
+        return PodStatus(pod_status_str)
+
     def get_pod_details(self, pod_id: str):
         """
         Retrieves detailed information about a specific pod by its ID.
@@ -109,6 +126,7 @@ class RunpodClient:
             pod(input: $input) {
                 id
                 name
+                desiredStatus
                 runtime {
                     uptimeInSeconds
                     ports {
@@ -134,7 +152,7 @@ class RunpodClient:
 
         variables = {"input": {"podId": pod_id}}
 
-        print(query, variables)
+        # print(query, variables)
 
         data = self._post({"query": query, "variables": variables})
 
@@ -185,22 +203,28 @@ class RunpodClient:
 
         input_data = {
             "cloudType": "ALL" if on_demand else "SECURE",
+
             "gpuCount": 1,
+
+            # these are both necessary
             "volumeInGb": 40,
             "containerDiskInGb": 200,
+
             # "minVcpuCount": 2,
             # "minMemoryInGb": 15,
-            "gpuTypeId": gpu_id,  # Ensure this is the correct ID from `get_gpu_prices()`
-            "name": template_id,  # Verify this matches an available template ID
-            # "imageName": template_id,  # Double-check the template name
+            "gpuTypeId": gpu_id,
+            "name": template_id,  # TODO make this a unique name
+            # "imageName": image_id, # not needed when specifying the template_id
             "templateId": template_id,
-            "dockerArgs": "",
-            "ports": "8888/http",
-            "volumeMountPath": "/workspace",
+
+            # "dockerArgs": "",
+            # "ports": "8888/http",
+            # "volumeMountPath": "/workspace",
             # "env": [{"key": "JUPYTER_PASSWORD", "value": "securepassword123"}]  # Change if necessary
         }
 
         data = self._post({"query": mutation, "variables": {"input": input_data}})
+
         try:
             return data["data"][mutation_name]
         except KeyError:
@@ -225,7 +249,7 @@ class RunpodClient:
         }
         """
 
-        variables = {"input": {"podId": pod_id}}  # ✅ Correct: Uses "PodFilter!" instead of "PodInput!"
+        variables = {"input": {"podId": pod_id}}
 
         # print(mutation, variables)
 

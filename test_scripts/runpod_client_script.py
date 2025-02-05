@@ -54,6 +54,25 @@ def main():
 
     print(running_pods)
 
+    # status cases:
+
+    # CREATED
+    # RUNNING
+    # RESTARTING
+    # EXITED
+    # PAUSED
+    # DEAD
+    # TERMINATED
+
+    for pod in running_pods:
+        pod_status = pod["desiredStatus"]
+        print(f"Pod Status: {pod_status}")
+
+
+    pod_status = runpod_client.get_pod_status(pod_id)
+
+    print(f"Pod status: {pod_status}")
+
     print(f"Stopping pod {pod_id}...")
     runpod_client.stop_pod(pod_id)
 
@@ -69,6 +88,8 @@ def main():
     print(running_pods)
 
     exit(0)
+
+
 
     # Step 2: Poll until Pod is Running
     print(f"Polling for pod {pod_id} to reach 'RUNNING' status...")
