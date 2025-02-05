@@ -1,0 +1,3 @@
+# config file
+vital_llm_cluster_mgr:
+  runpod_key: "key-here"
